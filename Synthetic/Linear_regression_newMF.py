@@ -275,7 +275,7 @@ for i in sample_sizes:
 
 
 result_df = pd.DataFrame(results_dict)
-result_df.to_csv('LR_synthetic_example_scan_newMF.csv', index=False) 
+result_df.to_csv('LR_synthetic_scan_newMF.csv', index=False) 
 
 
 # In[ ]:

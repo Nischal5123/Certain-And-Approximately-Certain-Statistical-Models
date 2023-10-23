@@ -250,11 +250,26 @@ def test(n_samples, n_features, missing_factor):
              (X_clean[clean_test_indices,:], y_clean[clean_test_indices]),
              X_full,
              (train_indices,indices_dirty,indices_clean))
+    AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
+             (X_clean, y_clean),
+             (X_clean[clean_test_indices,:], y_clean[clean_test_indices]),
+             X_full,
+             (train_indices,indices_dirty,indices_clean))
+    AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
+             (X_clean, y_clean),
+             (X_clean[clean_test_indices,:], y_clean[clean_test_indices]),
+             X_full,
+             (train_indices,indices_dirty,indices_clean))
+    AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
+             (X_clean, y_clean),
+             (X_clean[clean_test_indices,:], y_clean[clean_test_indices]),
+             X_full,
+             (train_indices,indices_dirty,indices_clean))
     end_time = time.time()
-    AC_records = (AC_records_1 + AC_records_2) / 2
-    AC_score = (AC_score_1 + AC_score_2) / 2
+    AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
+    AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
     time_elapsed = end_time - start_time
-    AC_time =  time_elapsed / 2   
+    AC_time =  time_elapsed / 5   
 
 
     return n_samples, n_features, missing_factor,n_missing, result, CM_score, CM_time, AC_time, AC_records, AC_score
@@ -291,7 +306,7 @@ for i in sample_sizes:
 
 
 result_df = pd.DataFrame(results_dict)
-result_df.to_csv('SVM_example_scan_1M_newMF.csv', index=False)
+result_df.to_csv('SVM_scan_newMF.csv', index=False)
 
 
 # In[ ]:

@@ -67,7 +67,7 @@ def check_certain_model(X_train, y_train):
     # Extract the feature weights (model parameters)
     feature_weights = svm_model.coef_[0]
 
-    # Check if the absolute value of feature_weights[i] is smaller than 1e-3 for all i with missing columns
+    # Check if the absolute value of feature_weights[i] is small enough for all i with missing columns
     for i in missing_columns_indices:
         if abs(feature_weights[i]) >= 1e-3:
             res = False
@@ -266,7 +266,7 @@ df[last_column_index] = df[last_column_index].replace({'malware': 1, 'goodware':
 
 # In[5]:
 
-# We saw a row (#2533) with all the values missing in the row. We believe this row was written by accident and is not part of the data becucase the dataset claims that it does NOT has missing values (https://doi.org/10.24432/C5560H)
+# We saw a row (#2533) with all the values missing in the row. We believe this row was written in by accident, and is not part of the data becucase the dataset claims that it does NOT has missing values (https://doi.org/10.24432/C5560H)
 # As a result, we delete this row
 df = df.dropna(how='all')
 
