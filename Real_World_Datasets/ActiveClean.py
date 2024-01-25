@@ -2,7 +2,10 @@ import time
 import numpy as np
 from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import SGDRegressor
-
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import mean_squared_error, r2_score
+import os
+import pandas as pd
 def translate_indices(globali, imap):
     lset = set(globali)
     return [s for s,t in enumerate(imap) if t in lset]
@@ -24,7 +27,11 @@ def ec_filter(dirtyex, full_data, clf, t=0.90):
 
     #print("CLF none")
     return dirtyex
-def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchsize=50, total=10000):
+
+
+
+
+def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, task='classification', batchsize=50, total=10000):
     # makes sure the initialization uses the training data
     X = dirty_data[0][translate_indices(indextuple[0], indextuple[1]), :]
     y = dirty_data[1][translate_indices(indextuple[0], indextuple[1])]
@@ -32,8 +39,8 @@ def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchs
     X_clean = clean_data[0]
     y_clean = clean_data[1]
 
-    X_test = test_data[0]
-    y_test = test_data[1]
+    X_test = test_data[0].values
+    y_test = test_data[1].values
 
     # print("[ActiveClean Real] Initialization")
 
@@ -56,8 +63,10 @@ def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchs
     for j in set(examples_real):
         dirtyex.remove(j)
 
-    clf = SGDRegressor(penalty=None)
-    # clf = SGDClassifier(loss="hinge", alpha=0.000001, max_iter=200, fit_intercept=True, warm_start=True)
+    if task =='classification':
+        clf = SGDClassifier(loss="hinge", alpha=0.000001, max_iter=200, fit_intercept=True, warm_start=True)
+    else:
+        clf = SGDRegressor(penalty=None,max_iter=200)
     clf.fit(X_clean[cleanex, :], y_clean[cleanex])
 
     for i in range(50, total, batchsize):
@@ -95,15 +104,31 @@ def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchs
         # uses partial fit (not in the paper--not exactly SGD)
         clf.partial_fit(X_clean[cleanex, :], y_clean[cleanex])
 
-        #print('Clean', len(cleanex))
+        print('Clean', len(cleanex))
         # print("[ActiveClean Real] Accuracy ", i ,accuracy_score(y_test, ypred,normalize = True))
-        # print(f"[ActiveClean Real] Iteration: {i} Accuracy: {accuracy_score(y_test, ypred,normalize = True)}")
+        #print(f"[ActiveClean Real] Iteration: {i} Accuracy: {accuracy_score(y_test, ypred,normalize = True)}")
         if len(dirtyex) < 50:
             print("[ActiveClean Real] No More Dirty Data Detected")
             print("[ActiveClean Real] Total Dirty records cleaned", total_cleaning)
-            return total_cleaning, 0 if clf.score(X_clean[cleanex, :], y_clean[cleanex]) is None else clf.score(
-                X_clean[cleanex, :], y_clean[cleanex])
-    print("[ActiveClean Real] Total Dirty records cleaned", total_cleaning)
-    return total_cleaning, 0 if clf.score(X_clean[cleanex, :], y_clean[cleanex]) is None else clf.score(
-        X_clean[cleanex, :], y_clean[cleanex])
+            # return total_cleaning, 0 if clf.score(X_clean[cleanex, :], y_clean[cleanex]) is None else clf.score(
+            #     X_clean[cleanex, :], y_clean[cleanex])cleanex
+            if task == 'classification':
+                ypred = clf.predict(X_test)
+                return total_cleaning, 0 if accuracy_score(y_test, ypred) is None else accuracy_score(y_test, ypred)
 
+            else:
+                ypred = clf.predict(X_test)
+                return total_cleaning, 0 if mean_squared_error(y_test, ypred) is None else mean_squared_error(y_test, ypred)
+
+    print("[ActiveClean Real] Total Dirty records cleaned", total_cleaning)
+    if task == 'classification':
+        ypred = clf.predict(X_test)
+        return total_cleaning, 0 if accuracy_score(y_test, ypred) is None else accuracy_score(y_test, ypred)
+
+    else:
+        ypred = clf.predict(X_test)
+        return total_cleaning, 0 if mean_squared_error(y_test, ypred) is None else mean_squared_error(y_test, ypred)
+
+
+if __name__ == '__main__':
+    print('Not implemented')

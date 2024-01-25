@@ -1,2 +1,0 @@
-AC example cleaned: 3.2
-AC running time:  0.9616563796997071

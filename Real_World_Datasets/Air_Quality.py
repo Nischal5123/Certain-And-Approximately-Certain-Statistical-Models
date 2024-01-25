@@ -93,6 +93,7 @@ if __name__ == '__main__':
     # Replace all occurrences of -200 with NaN
     df.replace(-200, np.nan, inplace=True)
     df = drop_categorical_columns(df)
+    df.to_csv('Final-Datasets/Air-Quality.csv')
     print(missing_values_table(df))
     for i in df.columns:
         X, y = split_features_labels(df, i)

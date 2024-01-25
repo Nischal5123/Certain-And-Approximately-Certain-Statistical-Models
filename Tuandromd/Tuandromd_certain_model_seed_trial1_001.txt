@@ -1,3 +1,0 @@
-found_seed_1: 2765
-attempts: 8
-time spent from certain model algorithm when NO certain model eixts:  0.03021815088060167

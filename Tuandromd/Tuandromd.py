@@ -57,7 +57,7 @@ def check_certain_model(X_train, y_train):
     # Remove rows with missing values from X_train and corresponding labels from y_train
     X_train_complete = np.delete(X_train, missing_rows_indices, axis=0)
     y_train_complete = np.delete(y_train, missing_rows_indices, axis=0)
-    #print(X_train_complete.shape)
+    # print(X_train_complete.shape)
     # Create and train the SVM model using SGDClassifier
     svm_model = SGDClassifier(loss='hinge', max_iter=1000, random_state=42)
 
@@ -106,13 +106,10 @@ def make_dirty(df, random_seed, missing_factor):
     df_dirty = df.copy()
 
     for col in dirty_cols:
-        dirty_rows = np.random.choice(num_rows, num_dirty_rows, replace = False)
+        dirty_rows = np.random.choice(num_rows, num_dirty_rows, replace=False)
         df_dirty.loc[dirty_rows, col] = np.nan
 
     return df_dirty
-
-
-
 
 
 # In[ ]:
@@ -120,22 +117,24 @@ def make_dirty(df, random_seed, missing_factor):
 
 def translate_indices(globali, imap):
     lset = set(globali)
-    return [s for s,t in enumerate(imap) if t in lset]
+    return [s for s, t in enumerate(imap) if t in lset]
+
 
 def error_classifier(total_labels, full_data):
     indices = [i[0] for i in total_labels]
     labels = [int(i[1]) for i in total_labels]
     if np.sum(labels) < len(labels):
-        clf = SGDClassifier(loss="log_loss", alpha=1e-6, max_iter=200, fit_intercept=True)
-        clf.fit(full_data[indices,:],labels)
+        clf = SGDClassifier(loss="log", alpha=1e-6, max_iter=200, fit_intercept=True)
+        clf.fit(full_data[indices, :], labels)
         return clf
     else:
         return None
 
+
 def ec_filter(dirtyex, full_data, clf, t=0.90):
     if clf != None:
-        pred = clf.predict_proba(full_data[dirtyex,:])
-        return [j for i,j in enumerate(dirtyex) if pred[i][0] < t]
+        pred = clf.predict_proba(full_data[dirtyex, :])
+        return [j for i, j in enumerate(dirtyex) if pred[i][0] < t]
 
     print("CLF none")
 
@@ -143,9 +142,9 @@ def ec_filter(dirtyex, full_data, clf, t=0.90):
 
 
 def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchsize=50, total=1000000):
-    #makes sure the initialization uses the training data
-    X = dirty_data[0][translate_indices(indextuple[0],indextuple[1]),:]
-    y = dirty_data[1][translate_indices(indextuple[0],indextuple[1])]
+    # makes sure the initialization uses the training data
+    X = dirty_data[0][translate_indices(indextuple[0], indextuple[1]), :]
+    y = dirty_data[1][translate_indices(indextuple[0], indextuple[1])]
 
     X_clean = clean_data[0]
     y_clean = clean_data[1]
@@ -153,7 +152,7 @@ def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchs
     X_test = test_data[0]
     y_test = test_data[1]
 
-    #print("[ActiveClean Real] Initialization")
+    # print("[ActiveClean Real] Initialization")
 
     lset = set(indextuple[2])
     dirtyex = [i for i in indextuple[0]]
@@ -162,43 +161,40 @@ def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchs
     total_labels = []
     total_cleaning = 0  # Initialize the total count of missing or originally dirty examples
 
-
     ##Not in the paper but this initialization seems to work better, do a smarter initialization than
     ##just random sampling (use random initialization)
-    topbatch = np.random.choice(range(0,len(dirtyex)), batchsize)
+    topbatch = np.random.choice(range(0, len(dirtyex)), batchsize)
     examples_real = [dirtyex[j] for j in topbatch]
     examples_map = translate_indices(examples_real, indextuple[2])
 
-
-    #Apply Cleaning to the Initial Batch
+    # Apply Cleaning to the Initial Batch
     cleanex.extend(examples_map)
     for j in set(examples_real):
         dirtyex.remove(j)
 
-    #clf = SGDRegressor(penalty = None)
+    # clf = SGDRegressor(penalty = None)
     clf = SGDClassifier(loss="hinge", alpha=0.000001, max_iter=200, fit_intercept=True, warm_start=True)
-    clf.fit(X_clean[cleanex,:],y_clean[cleanex])
+    clf.fit(X_clean[cleanex, :], y_clean[cleanex])
 
     for i in range(50, total, batchsize):
-        #print("[ActiveClean Real] Number Cleaned So Far ", len(cleanex))
+        # print("[ActiveClean Real] Number Cleaned So Far ", len(cleanex))
         ypred = clf.predict(X_test)
-        #print("[ActiveClean Real] Prediction Freqs",np.sum(ypred), np.shape(ypred))
-        #print(f"[ActiveClean Real] Prediction Freqs sum ypred: {np.sum(ypred)} shape of ypred: {np.shape(ypred)}")
-        #print(classification_report(y_test, ypred))
+        # print("[ActiveClean Real] Prediction Freqs",np.sum(ypred), np.shape(ypred))
+        # print(f"[ActiveClean Real] Prediction Freqs sum ypred: {np.sum(ypred)} shape of ypred: {np.shape(ypred)}")
+        # print(classification_report(y_test, ypred))
 
-        #Sample a new batch of data
+        # Sample a new batch of data
         examples_real = np.random.choice(dirtyex, batchsize)
-        
+
         # Calculate the count of missing or originally dirty examples within the batch
         missing_count = sum(1 for r in examples_real if r in indextuple[1])
         total_cleaning += missing_count  # Add the count to the running total
-        
-        
+
         examples_map = translate_indices(examples_real, indextuple[2])
 
         total_labels.extend([(r, (r in lset)) for r in examples_real])
 
-        #on prev. cleaned data train error classifier
+        # on prev. cleaned data train error classifier
         ec = error_classifier(total_labels, full_data)
         print(ec)
         for j in examples_real:
@@ -209,23 +205,24 @@ def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchs
 
         dirtyex = ec_filter(dirtyex, full_data, ec)
 
-        #Add Clean Data to The Dataset
+        # Add Clean Data to The Dataset
         cleanex.extend(examples_map)
 
-        #uses partial fit (not in the paper--not exactly SGD)
-        clf.partial_fit(X_clean[cleanex,:],y_clean[cleanex])
+        # uses partial fit (not in the paper--not exactly SGD)
+        clf.partial_fit(X_clean[cleanex, :], y_clean[cleanex])
 
-        print('Clean',len(cleanex))
+        print('Clean', len(cleanex))
         # print("[ActiveClean Real] Accuracy ", i ,accuracy_score(y_test, ypred,normalize = True))
         # print(f"[ActiveClean Real] Iteration: {i} Accuracy: {accuracy_score(y_test, ypred,normalize = True)}")
 
         if len(dirtyex) < 50:
             print("[ActiveClean Real] No More Dirty Data Detected")
             print("[ActiveClean Real] Total Dirty records cleaned", total_cleaning)
-            return total_cleaning, 0 if clf.score(X_clean[cleanex,:],y_clean[cleanex]) is None else clf.score(X_clean[cleanex,:],y_clean[cleanex])
+            return total_cleaning, 0 if clf.score(X_clean[cleanex, :], y_clean[cleanex]) is None else clf.score(
+                X_clean[cleanex, :], y_clean[cleanex])
     print("[ActiveClean Real] Total Dirty records cleaned", total_cleaning)
-    return total_cleaning, 0 if clf.score(X_clean[cleanex,:],y_clean[cleanex]) is None else clf.score(X_clean[cleanex,:],y_clean[cleanex]) 
-            
+    return total_cleaning, 0 if clf.score(X_clean[cleanex, :], y_clean[cleanex]) is None else clf.score(
+        X_clean[cleanex, :], y_clean[cleanex])
 
 
 # In[ ]:
@@ -243,10 +240,8 @@ def genreate_AC_data(df_train, df_test):
     for i in ind:
         for j in feat:
             e_feat[i, j] = 0.01 * np.random.rand()
-    return features_test, target_test,csr_matrix(e_feat[not_ind,:]),np.ravel(target[not_ind]),csr_matrix(e_feat[ind,:]),np.ravel(target[ind]),csr_matrix(e_feat), np.arange(len(e_feat)).tolist(),ind, not_ind
-
-
-
+    return features_test, target_test, csr_matrix(e_feat[not_ind, :]), np.ravel(target[not_ind]), csr_matrix(
+        e_feat[ind, :]), np.ravel(target[ind]), csr_matrix(e_feat), np.arange(len(e_feat)).tolist(), ind, not_ind
 
 
 # In[4]:
@@ -263,21 +258,18 @@ last_column_index = df.columns[-1]
 # Replace 'malware' with 1 and 'goodware' with -1 in the last column
 df[last_column_index] = df[last_column_index].replace({'malware': 1, 'goodware': -1})
 
-
 # In[5]:
 
 # We saw a row (#2533) with all the values missing in the row. We believe this row was written in by accident, and is not part of the data becucase the dataset claims that it does NOT has missing values (https://doi.org/10.24432/C5560H)
 # As a result, we delete this row
 df = df.dropna(how='all')
 
-
 # In[6]:
 
 
 # Split the DataFrame into features (X) and labels (y)
 X = df.iloc[:, :-1]  # Features (all columns except the last one)
-y = df.iloc[:, -1]   # Labels (the last column)
-
+y = df.iloc[:, -1]  # Labels (the last column)
 
 # Split the data into training and testing sets (adjust the test_size as needed)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -292,17 +284,15 @@ df_test = pd.concat([X_test, y_test], axis=1)
 df_train.reset_index(drop=True, inplace=True)
 df_test.reset_index(drop=True, inplace=True)
 
-
 # In[7]:
 
 
 df_train
 
-
 # In[8]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -315,7 +305,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -326,13 +316,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -344,7 +334,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -352,50 +341,47 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.001)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial1_0001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
 
 # In[ ]:
 
@@ -442,7 +428,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -450,39 +435,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.001)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -490,11 +476,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial2_0001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
 
 # In[ ]:
 
@@ -541,7 +522,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -549,39 +529,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.001)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -589,12 +570,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial3_0001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-
 
 # In[ ]:
 
@@ -641,7 +616,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -649,39 +623,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.01)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -689,13 +664,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial1_001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-
-
 
 # In[ ]:
 
@@ -742,7 +710,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -750,39 +717,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.01)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -790,14 +758,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial2_001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-
-
-
 
 # In[ ]:
 
@@ -844,7 +804,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -852,39 +811,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.01)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -892,7 +852,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial3_001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
 
 # In[ ]:
 
@@ -939,7 +898,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -947,39 +905,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.05)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -987,13 +946,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial1_005.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-
-
 
 # In[ ]:
 
@@ -1040,7 +992,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -1048,39 +999,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.05)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -1088,14 +1040,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial2_005.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-
-
-
 
 # In[ ]:
 
@@ -1142,7 +1086,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -1150,39 +1093,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.05)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -1190,7 +1134,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial3_005.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
 
 # In[ ]:
 
@@ -1237,7 +1180,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -1245,39 +1187,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.1)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -1285,13 +1228,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial1_01.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-
-
 
 # In[ ]:
 
@@ -1338,7 +1274,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -1346,39 +1281,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.1)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -1386,14 +1322,6 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial2_01.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-
-
-
 
 # In[ ]:
 
@@ -1440,7 +1368,6 @@ if found_seed_1 is not None:
         file.write(f"attempts: {10000 - max_attempts}\n")
         file.write(f"time spent from certain model algorithm when NO certain model eixts:  {average_time}\n")
 
-
 # In[ ]:
 
 
@@ -1448,39 +1375,40 @@ df_dirty = make_dirty(df_train, found_seed_1, 0.1)
 # Access the last column by its numerical index (-1)
 df_dirty.reset_index(drop=True, inplace=True)
 
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_dirty, df_test)
+features_test, target_test, X_clean, y_clean, X_dirty, y_dirty, X_full, train_indices, indices_dirty, indices_clean = genreate_AC_data(
+    df_dirty, df_test)
 
 start_time = time.time()
 AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
+                                       (X_clean, y_clean),
+                                       (features_test, target_test),
+                                       X_full,
+                                       (train_indices, indices_dirty, indices_clean))
 end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5
+AC_time = elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
@@ -1488,9 +1416,3 @@ AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
 with open('AC_trial3_01.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
-
-
-
-
-
-

@@ -66,12 +66,15 @@ def check_certain_model_classification(X_t, y_t):
         res=False
         feature_weights=-100
     return res, feature_weights
+
+
+
 def check_certain_model_regression(CX_train, Cy_train, missing_train, CX_test, Cy_test, missing_test):
     #reg = SGDRegressor(penalty = None).fit(CX,Cy)
     reg = LinearRegression(fit_intercept = False).fit(CX_train,Cy_train)
     w_bar = reg.coef_
-    loss = (np.dot(CX_test,w_bar.T) - Cy_test)
-    result = check_orthogonal(missing_test,loss)
+    loss = (np.dot(CX_train,w_bar.T) - Cy_train)
+    result = check_orthogonal(missing_train,loss)
     # print('w_bar',w_bar)
     # print('loss',loss)
     return result, reg.score(CX_test,Cy_test)

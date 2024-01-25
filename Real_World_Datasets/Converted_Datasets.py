@@ -2,10 +2,9 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
-from utils import featurize_categorical_data
 from utils import drop_categorical_columns
 from ucimlrepo import fetch_ucirepo
-from scipy.io import arff
+import arff
 import os
 def check_certain_model(X_train, y_train):
     res = True
@@ -98,14 +97,15 @@ def split_features_labels(df, label_column):
     return X, y
 
 if __name__ == '__main__':
-    data_path = 'data/new_datasets/'
+    data_path = 'data/V4 data/'
     csv_files = os.listdir(data_path)
     for csv_filename in csv_files:
       if csv_filename.endswith('.arff'):
         print("Converting '{}'...".format(csv_filename))
         #print(os.path.join(data_path, csv_filename))
-        data = arff.loadarff(os.path.join(data_path, csv_filename))
-        df = pd.DataFrame(data[0])
+        fp=open(os.path.join(data_path, csv_filename))
+        data = arff.load(fp)
+        df = pd.DataFrame(data['data'])
         df = drop_categorical_columns(df)
 
         res=False
