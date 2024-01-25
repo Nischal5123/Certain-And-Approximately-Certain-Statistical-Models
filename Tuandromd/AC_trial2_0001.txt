@@ -1,0 +1,2 @@
+AC example cleaned: 1.8
+AC running time:  0.5158592224121094

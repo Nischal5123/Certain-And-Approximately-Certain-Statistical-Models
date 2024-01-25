@@ -94,13 +94,13 @@ def check_certain_model(X_train, y_train):
 
 
 def make_dirty(df, random_seed, missing_factor):
-    np.random.seed(random_seed) 
+    np.random.seed(random_seed)
     num_cols = df.shape[1]
     num_dirty_cols = 1
 
     num_rows = df.shape[0]
     num_dirty_rows = int(missing_factor * num_rows)
-    
+
     dirty_cols = np.random.choice(df.columns[:-1], num_dirty_cols, replace=False)
 
     df_dirty = df.copy()
@@ -126,7 +126,7 @@ def error_classifier(total_labels, full_data):
     indices = [i[0] for i in total_labels]
     labels = [int(i[1]) for i in total_labels]
     if np.sum(labels) < len(labels):
-        clf = SGDClassifier(loss="log", alpha=1e-6, max_iter=200, fit_intercept=True)
+        clf = SGDClassifier(loss="log_loss", alpha=1e-6, max_iter=200, fit_intercept=True)
         clf.fit(full_data[indices,:],labels)
         return clf
     else:
@@ -400,7 +400,7 @@ with open('AC_trial1_0001.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -413,7 +413,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -424,13 +424,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -482,11 +482,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial2_0001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -499,7 +499,7 @@ with open('AC_trial2_0001.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -512,7 +512,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -523,13 +523,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -581,11 +581,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial3_0001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -599,7 +599,7 @@ with open('AC_trial3_0001.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -612,7 +612,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -623,13 +623,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -681,11 +681,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial1_001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -700,7 +700,7 @@ with open('AC_trial1_001.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -713,7 +713,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -724,13 +724,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -782,11 +782,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial2_001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -802,7 +802,7 @@ with open('AC_trial2_001.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -815,7 +815,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -826,13 +826,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -884,11 +884,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial3_001.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -897,7 +897,7 @@ with open('AC_trial3_001.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -910,7 +910,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -921,13 +921,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -979,11 +979,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial1_005.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -998,7 +998,7 @@ with open('AC_trial1_005.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -1011,7 +1011,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -1022,13 +1022,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -1080,11 +1080,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial2_005.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -1100,7 +1100,7 @@ with open('AC_trial2_005.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -1113,7 +1113,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -1124,13 +1124,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -1182,11 +1182,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial3_005.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -1195,7 +1195,7 @@ with open('AC_trial3_005.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -1208,7 +1208,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -1219,13 +1219,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -1277,11 +1277,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial1_01.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -1296,7 +1296,7 @@ with open('AC_trial1_01.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -1309,7 +1309,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -1320,13 +1320,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -1378,11 +1378,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial2_01.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")
@@ -1398,7 +1398,7 @@ with open('AC_trial2_01.txt', 'w') as file:
 # In[ ]:
 
 
-max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops   
+max_attempts = 10000  # Define a maximum number of attempts to avoid infinite loops
 found_seed_1 = None  # Initialize found_seed to None
 total_time = 0
 total_count = 0
@@ -1411,7 +1411,7 @@ while max_attempts > 0:
     df_dirty.reset_index(drop=True, inplace=True)
     X_train = df_dirty.iloc[:, :-1]
     y_train = df_dirty.iloc[:, -1]
-    
+
     try:
         start_time = time.time()
         res, feature_weights = check_certain_model(X_train.values, y_train.values)
@@ -1422,13 +1422,13 @@ while max_attempts > 0:
         print(f"Error in check_certain_model: {e}")
         max_attempts -= 1
         continue  # Continue to the next iteration
-    
+
     print(random_seed)
     if res is True:
         found_seed_1 = random_seed  # Store the found seed
         print("Found the desired outcome with seed:", random_seed)
         break
-    
+
     max_attempts -= 1
 
 # Write the found seed to a text file
@@ -1480,11 +1480,11 @@ end_time = time.time()
 
 # Calculate the elapsed time
 elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
+AC_time =  elapsed_time / 5
 
 AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
 AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
+
 with open('AC_trial3_01.txt', 'w') as file:
     file.write(f"AC example cleaned: {AC_records}\n")
     file.write(f"AC running time:  {AC_time}\n")

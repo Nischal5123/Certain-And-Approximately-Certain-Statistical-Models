@@ -14,7 +14,6 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_regression
 from sklearn.svm import SVC
-from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import classification_report, accuracy_score
 from scipy.sparse import hstack, vstack
 import random
@@ -22,6 +21,7 @@ import pickle
 from scipy.sparse import csr_matrix
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import SGDRegressor
 
 
@@ -97,7 +97,7 @@ def error_classifier(total_labels, full_data):
     indices = [i[0] for i in total_labels]
     labels = [int(i[1]) for i in total_labels]
     if np.sum(labels) < len(labels):
-        clf = SGDClassifier(loss="log", alpha=1e-6, max_iter=200, fit_intercept=True)
+        clf = SGDClassifier(loss="log_loss", alpha=1e-6, max_iter=200, fit_intercept=True)
         clf.fit(full_data[indices,:],labels)
         return clf
     else:

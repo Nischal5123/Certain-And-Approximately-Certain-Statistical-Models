@@ -21,9 +21,9 @@ from scipy.stats import entropy
 from sklearn.neighbors import KernelDensity
 from scipy.special import kl_div
 from scipy.sparse import csr_matrix
-import torch
-import torchvision
-import torchvision.datasets as datasets
+# import torch
+# import torchvision
+# import torchvision.datasets as datasets
 
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler
