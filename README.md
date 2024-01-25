@@ -1,3 +1,35 @@
-1. Synthetic Dataset: The source code for three models (Linear Regression, Linear SVM, and Kernel SVM) can be found within the "Synthetic" folder.
-2. In some versions of scikit-learn, when running the benchmark method ActiveClean (code is from the authors at https://www.dropbox.com/sh/r2vv252m5lnqpmm/AAAMj0WRaZX9EKH_8dLOHQpIa?dl=0&preview=activeclean_sklearn.py), you may encounter an error: `sklearn.utils._param_validation.InvalidParameterError: "The 'loss' parameter of SGDClassifier must be a string selected from {'modified_huber', 'perceptron', 'squared_error', 'log_loss', 'squared_hinge', 'squared_epsilon_insensitive', 'huber', 'epsilon_insensitive', 'hinge'}. Instead, 'log' was provided." This error arises from a recent change in scikit-learn's grammar. If you encounter this error, please replace all instances of "log" with "log_loss" in the SGDClassifier within the ActiveClean functions.
-3. Real-World Dataset: This section includes three UCI datasets that were utilized in our paper. If you encounter the same error as described in point 2, kindly apply the modifications to the ActiveClean functions. Data files are available through the links below to the UCI database: 1) Malware: https://doi.org/10.24432/C5HG8D, 2) Gisette: https://doi.org/10.24432/C5HP5B, and 3) Tuandromd: https://doi.org/10.24432/C5560H
+# Project Readme
+
+## 1. Synthetic Dataset
+
+The source code for three models (Linear Regression, Linear SVM, and Kernel SVM) can be found within the "Synthetic" folder.
+
+## 2. ActiveClean Benchmark with scikit-learn
+
+In some versions of scikit-learn, when running the benchmark method ActiveClean (code from the authors [here](https://www.dropbox.com/sh/r2vv252m5lnqpmm/AAAMj0WRaZX9EKH_8dLOHQpIa?dl=0&preview=activeclean_sklearn.py)), you may encounter an error related to the 'loss' parameter of SGDClassifier. If you face this issue, please replace all instances of "log" with "log_loss" in the SGDClassifier within the ActiveClean functions.
+
+---
+### New Experiment Details
+
+## 3. Real-World Dataset-with-Random-Corruption
+
+This section includes three UCI datasets that were utilized in our paper. Each Dataset is divided into its own folder.
+- If you encounter the same error as described in point 2, kindly apply the modifications to the ActiveClean functions.
+- Data files are available through the links below to the UCI database:
+  1. [Malware](https://doi.org/10.24432/C5HG8D)
+  2. [Gisette](https://doi.org/10.24432/C5HP5B)
+  3. [Tuandromd](https://doi.org/10.24432/C5560H)
+ 
+For Running Experiments for instance for TUANDROMD. python3 TUANDROMD-DRIVER.py 
+
+
+## 4. Real-World-Dataset
+
+This section includes 8 real-world datasets with inherent missing values.
+- Every dataset has its specific file for running the code.
+- Some large datasets example Intel_Sensor can be found in their original source, all are cited in the paper.
+- Deep Learning based imputation (MIWAE) is implemented from the following repository: [https://github.com/vanderschaarlab/hyperimpute](https://github.com/vanderschaarlab/hyperimpute)
+- KNNImputer is implemented based on sklearn: [https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html](https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html)
+- MeanImputer is implemented based on sklearn: [https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html](https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html)
+
+-For Running Experiments for instance for water potability. python3 Water_Portability.py.
