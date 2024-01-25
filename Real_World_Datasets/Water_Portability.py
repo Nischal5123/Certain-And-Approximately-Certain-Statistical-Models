@@ -1,44 +1,25 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # In[1]:
 
 
 import time
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
-import random
-from sklearn.datasets import make_classification
-from sklearn.metrics import accuracy_score
-from sklearn.linear_model import SGDRegressor
-from scipy.stats import gaussian_kde
-from sklearn.preprocessing import LabelEncoder
-from sklearn.utils._testing import ignore_warnings
-from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import SGDClassifier
-from sklearn.utils import shuffle
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-import scipy.integrate as spi
-
-from scipy.stats import entropy
-from sklearn.neighbors import KernelDensity
-from scipy.special import kl_div
 from scipy.sparse import csr_matrix
-import copy
-from sklearn.datasets import load_breast_cancer
-
-
+from utils import (
+    get_simple_imputer_model_classification,
+    get_naive_imputer_model_classification,
+    get_knn_imputer_model_classification,
+    get_miwei_imputer_model_classification
+)
+from ActiveClean import activeclean
+import os
 # In[2]:
 
 
-def check_certain_model(X_train, y_train):
+def check_certain_model(X_train, y_train, X_test, y_test):
     res = True
-    X_train_copy = X_train.copy()
-    y_train_copy = y_train.copy()
 
     # Convert X_train and y_train to NumPy arrays
     X_train = X_train.values if isinstance(X_train, pd.DataFrame) else X_train
@@ -57,9 +38,16 @@ def check_certain_model(X_train, y_train):
     # Remove rows with missing values from X_train and corresponding labels from y_train
     X_train_complete = np.delete(X_train, missing_rows_indices, axis=0)
     y_train_complete = np.delete(y_train, missing_rows_indices, axis=0)
-    #print(X_train_complete.shape)
+    # print(X_train_complete.shape)
     # Create and train the SVM model using SGDClassifier
-    svm_model = SGDClassifier(loss='hinge', max_iter=1000, random_state=42)
+    svm_model = SGDClassifier(
+        loss="hinge",
+        alpha=0.0000000001,
+        max_iter=10000,
+        fit_intercept=True,
+        warm_start=True,
+        random_state=42,
+    )
 
     # Train the model on the data without missing values
     svm_model.fit(X_train_complete, y_train_complete)
@@ -71,7 +59,7 @@ def check_certain_model(X_train, y_train):
     for i in missing_columns_indices:
         if abs(feature_weights[i]) >= 1e-3:
             res = False
-            print("weight", feature_weights[i])
+            # print("weight", feature_weights[i])
             break
             # Return False as soon as a condition is not met
 
@@ -81,130 +69,22 @@ def check_certain_model(X_train, y_train):
         label = y_train_missing_rows[i]
         dot_product = np.sum(row[~np.isnan(row)] * feature_weights[~np.isnan(row)])
         if label * dot_product <= 1:
-            print("dot product", label * dot_product)
+            # print("dot product", label * dot_product)
             res = False
             break
             # Return False if the condition is not met for any row
-
-    # If all conditions are met, return True
-    return res, feature_weights
-
-def translate_indices(globali, imap):
-    lset = set(globali)
-    return [s for s,t in enumerate(imap) if t in lset]
-
-def error_classifier(total_labels, full_data):
-    indices = [i[0] for i in total_labels]
-    labels = [int(i[1]) for i in total_labels]
-    if np.sum(labels) < len(labels):
-        clf = SGDClassifier(loss="log_loss", alpha=1e-6, max_iter=200, fit_intercept=True)
-        clf.fit(full_data[indices,:],labels)
-        return clf
+    if res:
+        cm_score = svm_model.score(X_test, y_test)
     else:
-        return None
-
-def ec_filter(dirtyex, full_data, clf, t=0.90):
-    if clf != None:
-        pred = clf.predict_proba(full_data[dirtyex,:])
-        return [j for i,j in enumerate(dirtyex) if pred[i][0] < t]
-
-    print("CLF none")
-
-    return dirtyex
-
-
-def activeclean(dirty_data, clean_data, test_data, full_data, indextuple, batchsize=50, total=1000000):
-    #makes sure the initialization uses the training data
-    X = dirty_data[0][translate_indices(indextuple[0],indextuple[1]),:]
-    y = dirty_data[1][translate_indices(indextuple[0],indextuple[1])]
-
-    X_clean = clean_data[0]
-    y_clean = clean_data[1]
-
-    X_test = test_data[0]
-    y_test = test_data[1]
-
-    #print("[ActiveClean Real] Initialization")
-
-    lset = set(indextuple[2])
-    dirtyex = [i for i in indextuple[0]]
-    cleanex = []
-
-    total_labels = []
-    total_cleaning = 0  # Initialize the total count of missing or originally dirty examples
-
-
-    ##Not in the paper but this initialization seems to work better, do a smarter initialization than
-    ##just random sampling (use random initialization)
-    topbatch = np.random.choice(range(0,len(dirtyex)), batchsize)
-    examples_real = [dirtyex[j] for j in topbatch]
-    examples_map = translate_indices(examples_real, indextuple[2])
-
-
-    #Apply Cleaning to the Initial Batch
-    cleanex.extend(examples_map)
-    for j in set(examples_real):
-        dirtyex.remove(j)
-
-    #clf = SGDRegressor(penalty = None)
-    clf = SGDClassifier(loss="hinge", alpha=0.000001, max_iter=200, fit_intercept=True, warm_start=True)
-    clf.fit(X_clean[cleanex,:],y_clean[cleanex])
-
-    for i in range(50, total, batchsize):
-        #print("[ActiveClean Real] Number Cleaned So Far ", len(cleanex))
-        #ypred = clf.predict(X_test)
-        #print("[ActiveClean Real] Prediction Freqs",np.sum(ypred), np.shape(ypred))
-        #print(f"[ActiveClean Real] Prediction Freqs sum ypred: {np.sum(ypred)} shape of ypred: {np.shape(ypred)}")
-        #print(classification_report(y_test, ypred))
-
-        #Sample a new batch of data
-        examples_real = np.random.choice(dirtyex, batchsize)
-        
-        # Calculate the count of missing or originally dirty examples within the batch
-        missing_count = sum(1 for r in examples_real if r in indextuple[1])
-        total_cleaning += missing_count  # Add the count to the running total
-        
-        
-        examples_map = translate_indices(examples_real, indextuple[2])
-
-        total_labels.extend([(r, (r in lset)) for r in examples_real])
-
-        #on prev. cleaned data train error classifier
-        ec = error_classifier(total_labels, full_data)
-        print(ec)
-        for j in examples_real:
-            try:
-                dirtyex.remove(j)
-            except ValueError:
-                pass
-
-        dirtyex = ec_filter(dirtyex, full_data, ec)
-
-        #Add Clean Data to The Dataset
-        cleanex.extend(examples_map)
-
-        #uses partial fit (not in the paper--not exactly SGD)
-        clf.partial_fit(X_clean[cleanex,:],y_clean[cleanex])
-
-        print('Clean',len(cleanex))
-        # print("[ActiveClean Real] Accuracy ", i ,accuracy_score(y_test, ypred,normalize = True))
-        # print(f"[ActiveClean Real] Iteration: {i} Accuracy: {accuracy_score(y_test, ypred,normalize = True)}")
-
-        if len(dirtyex) < 50:
-            print("[ActiveClean Real] No More Dirty Data Detected")
-            print("[ActiveClean Real] Total Dirty records cleaned", total_cleaning)
-            return total_cleaning, 0 if clf.score(X_clean[cleanex,:],y_clean[cleanex]) is None else clf.score(X_clean[cleanex,:],y_clean[cleanex])
-    print("[ActiveClean Real] Total Dirty records cleaned", total_cleaning)
-    return total_cleaning, 0 if clf.score(X_clean[cleanex,:],y_clean[cleanex]) is None else clf.score(X_clean[cleanex,:],y_clean[cleanex]) 
-            
-
-
-# In[ ]:
+        cm_score=0.000000000001
+    # If all conditions are met, return True
+    return res, cm_score
 
 
 def genreate_AC_data(df_train, df_test):
     df_train = df_train.reset_index(drop=True)
     df_test = df_test.reset_index(drop=True)
+    #get xy doesn't matter last column is the label
     features, target = df_train.iloc[:, :-1], df_train.iloc[:, -1]
     features_test, target_test = df_test.iloc[:, :-1], df_test.iloc[:, -1]
     ind = list(features[features.isna().any(axis=1)].index)
@@ -214,88 +94,188 @@ def genreate_AC_data(df_train, df_test):
     for i in ind:
         for j in feat:
             e_feat[i, j] = 0.01 * np.random.rand()
-    return features_test, target_test,csr_matrix(e_feat[not_ind,:]),np.ravel(target[not_ind]),csr_matrix(e_feat[ind,:]),np.ravel(target[ind]),csr_matrix(e_feat), np.arange(len(e_feat)).tolist(),ind, not_ind
+    return (
+        features_test,
+        target_test,
+        csr_matrix(e_feat[not_ind, :]),
+        np.ravel(target[not_ind]),
+        csr_matrix(e_feat[ind, :]),
+        np.ravel(target[ind]),
+        csr_matrix(e_feat),
+        np.arange(len(e_feat)).tolist(),
+        ind,
+        not_ind,
+    )
+
+
+def get_Xy(data, label):
+    X = data.drop(label, axis=1)
+    y = data[label]
+    return X, y
+
+
+def active_clean_driver(df_train, df_test):
+    (
+        features_test,
+        target_test,
+        X_clean,
+        y_clean,
+        X_dirty,
+        y_dirty,
+        X_full,
+        train_indices,
+        indices_dirty,
+        indices_clean,
+    ) = genreate_AC_data(df_train, df_test)
+
+    start_time = time.time()
+    AC_records_1, AC_score_1 = activeclean(
+        (X_dirty, y_dirty),
+        (X_clean, y_clean),
+        (features_test, target_test),
+        X_full,
+        (train_indices, indices_dirty, indices_clean),
+    )
+    AC_records_2, AC_score_2 = activeclean(
+        (X_dirty, y_dirty),
+        (X_clean, y_clean),
+        (features_test, target_test),
+        X_full,
+        (train_indices, indices_dirty, indices_clean),
+    )
+    AC_records_3, AC_score_3 = activeclean(
+        (X_dirty, y_dirty),
+        (X_clean, y_clean),
+        (features_test, target_test),
+        X_full,
+        (train_indices, indices_dirty, indices_clean),
+    )
+    AC_records_4, AC_score_4 = activeclean(
+        (X_dirty, y_dirty),
+        (X_clean, y_clean),
+        (features_test, target_test),
+        X_full,
+        (train_indices, indices_dirty, indices_clean),
+    )
+    AC_records_5, AC_score_5 = activeclean(
+        (X_dirty, y_dirty),
+        (X_clean, y_clean),
+        (features_test, target_test),
+        X_full,
+        (train_indices, indices_dirty, indices_clean),
+    )
+    end_time = time.time()
+
+    # Calculate the elapsed time
+    elapsed_time = end_time - start_time
+    AC_time = elapsed_time / 5
+
+    AC_records = (
+        AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5
+    ) / 5
+    AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
+    return AC_records ,AC_score, AC_time
 
 
 
 
+if __name__ == "__main__":
+    df = pd.read_csv("Final-Datasets/water_potability.csv")
+    label = 'Potability'
+    X, y = get_Xy(
+        df, 'Potability'
+    )  # Features (all columns except the last one)  # Labels (the last column)
 
-# In[4]:
+    # print(missing_values_table(df))
 
-df = pd.read_csv("data/water_potability.csv")
-X = df.iloc[:, :-1]  # Features (all columns except the last one)
-y = df.iloc[:, -1]  # Labels (the last column)
+    # Split the data into training and testing sets (adjust the test_size as needed)
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, shuffle=True
+    )
 
-# Split the data into training and testing sets (adjust the test_size as needed)
-X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Merge X_train and y_train into df_train
+    df_train = pd.concat([X_train, Y_train], axis=1)
 
-# Merge X_train and y_train into df_train
-df_train = pd.concat([X_train, Y_train], axis=1)
+    # Merge X_test and y_test into df_test
+    df_test = pd.concat([X_test, Y_test], axis=1)
 
-# Merge X_test and y_test into df_test
-df_test = pd.concat([X_test, Y_test], axis=1)
+    # Reset the index for df_train and df_test
+    df_train.reset_index(drop=True, inplace=True)
+    # Drop all rows with null values in the original DataFrame
+    df_test.dropna(inplace=True)
+    df_test.reset_index(drop=True, inplace=True)
 
-# Reset the index for df_train and df_test
-df_train.reset_index(drop=True, inplace=True)
-df_test.reset_index(drop=True, inplace=True)
-X_train = df_train.iloc[:, :-1]
-y_train = df_train.iloc[:, -1]
-start_time = time.time()
-res, feature_weights = check_certain_model(X_train.values, y_train.values)
-end_time = time.time()
-total_time = (end_time - start_time)
-with open('Water_Portability_certain_model_seed_trial1_0001.txt', 'w') as file:
-    file.write(f"time spent from certain model algorithm when NO certain model eixts:  {total_time}\n")
-
-
-features_test, target_test,X_clean,y_clean,X_dirty,y_dirty,X_full,train_indices,indices_dirty,indices_clean=genreate_AC_data(df_train, df_test)
-
-start_time = time.time()
-AC_records_1, AC_score_1 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
-AC_records_2, AC_score_2 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
-AC_records_3, AC_score_3 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
-AC_records_4, AC_score_4 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
-AC_records_5, AC_score_5 = activeclean((X_dirty, y_dirty),
-            (X_clean, y_clean),
-            (features_test, target_test),
-            X_full,
-            (train_indices,indices_dirty,indices_clean))
-end_time = time.time()
-
-# Calculate the elapsed time
-elapsed_time = end_time - start_time
-AC_time =  elapsed_time / 5 
-
-AC_records = (AC_records_1 + AC_records_2 + AC_records_3 + AC_records_4 + AC_records_5) / 5
-AC_score = (AC_score_1 + AC_score_2 + AC_score_3 + AC_score_4 + AC_score_5) / 5
-    
-with open('AC_trial1_0001.txt', 'w') as file:
-    file.write(f"AC example cleaned: {AC_records}\n")
-    file.write(f"AC running time:  {AC_time}\n")
+    X_test = df_test.iloc[:, :-1]
+    y_test = df_test.iloc[:, -1]
 
 
+    # Calculate the total number of examples
+    total_examples = len(X_train)
+    # Count the number of missing values in each row
+    missing_values_per_row = X_train.isnull().sum(axis=1)
 
+    # Count the total number of rows with missing values
+    rows_with_missing_values = len(missing_values_per_row[missing_values_per_row > 0])
 
+    # Display the result
+    print("Number of rows with missing values:", rows_with_missing_values)
+    # Calculate the missing factor for each column
+    missing_factor = rows_with_missing_values / total_examples
+    print(f"Total example {X_train.shape}, MISSING FACTOR : {missing_factor}")
 
+    start_time = time.time()
+    result, CM_score = check_certain_model(X_train.values, Y_train.values,X_test.values, y_test.values)
+    end_time = time.time()
+    CM_time = end_time - start_time
+    print(
+        f"Certain Model result for {label}, time :{CM_time}  RESULT ###### {result} and score {CM_score}"
+    )
 
+    name = f"Water_CM_Exist_{result}.txt"
+    filename = os.path.join('Final-Results', name)
+    with open(filename, "w+") as file:
+        file.write(f"Number of Rows with missing values:{rows_with_missing_values}\n")
+        file.write(f"Missing Factor:{missing_factor}\n")
+        file.write(f"Running Time (CM):  {CM_time}\n")
+        file.write(f"Accuracy (CM):  {CM_score}\n")
 
+    meiwei_imputer_score, meiwei_imputer_time = get_miwei_imputer_model_classification(df_train, df_test, label)
+    with open(filename, "a+") as file:
+        file.write(f"Accuracy (Meiewi): {meiwei_imputer_score}\n")
+        file.write(f"Running Time (Meiewi):  {meiwei_imputer_time}\n")
 
+    simple_imputer_score, simpler_imputer_time = get_simple_imputer_model_classification(
+        df_train, df_test, label
+    )
+    print(
+        f"########################## Simple Model result for {label}, time :{simpler_imputer_time} , test accuracy {simple_imputer_score}########################## "
+    )
 
+    knn_imputer_score, knn_imputer_time = get_knn_imputer_model_classification(
+        df_train, df_test, label
+    )
+    print(
+        f"########################## Simple Model result for {label}, time :{knn_imputer_score} , test accuracy {knn_imputer_time}########################## "
+    )
 
+    naive_imputer_score, naive_imputer_time = get_naive_imputer_model_classification(
+        df_train, df_test, label
+    )
+
+    print(
+        f"########################## Naive Model result for {label}, time :{naive_imputer_time} , test accuracy {naive_imputer_score}########################## "
+    )
+
+    AC_records, AC_score, AC_time = active_clean_driver(df_train, df_test, label)
+
+    with open(filename, "a+") as file:
+        file.write(f"Accuracy (KNN): {knn_imputer_score}\n")
+        file.write(f"Running Time (KNN):  {knn_imputer_time}\n")
+        file.write(f"Accuracy (MI): {simple_imputer_score}\n")
+        file.write(f"Running Time (MI):  {simpler_imputer_time}\n")
+        file.write(f"Accuracy (NI): {naive_imputer_score}\n")
+        file.write(f"Running Time (NI):  {naive_imputer_time}\n")
+        file.write(f"Number of Examples Cleaned (AC): {AC_records}\n")
+        file.write(f"Running Time (AC):  {AC_time}\n")
+        file.write(f"Accuracy (AC):  {AC_score}\n")
 
