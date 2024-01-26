@@ -8,8 +8,9 @@ The source code for three models (Linear Regression, Linear SVM, and Kernel SVM)
 
 In some versions of scikit-learn, when running the benchmark method ActiveClean (code from the authors [here](https://www.dropbox.com/sh/r2vv252m5lnqpmm/AAAMj0WRaZX9EKH_8dLOHQpIa?dl=0&preview=activeclean_sklearn.py)), you may encounter an error related to the 'loss' parameter of SGDClassifier. If you face this issue, please replace all instances of "log" with "log_loss" in the SGDClassifier within the ActiveClean functions.
 
----
-### New Experiment Details
+-----------------------------------------------------------------------------------------
+
+### New Revision Experiment Details
 
 ## 3. Real-World Dataset-with-Random-Corruption
 
@@ -33,3 +34,11 @@ This section includes 8 real-world datasets with inherent missing values.
 - MeanImputer is implemented based on sklearn: [https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html](https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html)
 
 -For Running Experiments for instance for water potability. python3 Water_Portability.py.
+
+
+## 5. Approximate-Certain-Model
+
+This section includes code for ACM experiments.
+- Every dataset has its specific file for running the code.
+- Make sure the filepath is pointed to the correct directory.
+-For Running Experiments for instance for breast cancer. python3 breast_cancer_ACM.py.
