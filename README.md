@@ -1,4 +1,4 @@
-# Project Readme
+# TO APPEAR IN SIGMOD 2024 : https://arxiv.org/abs/2402.17926
 
 ## 1. Synthetic Dataset
 
