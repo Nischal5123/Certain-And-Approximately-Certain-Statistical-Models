@@ -1,4 +1,4 @@
-# TO APPEAR IN SIGMOD 2024 : https://arxiv.org/abs/2402.17926
+# SIGMOD 2024
 
 ## 1. Synthetic Dataset
 
@@ -42,3 +42,27 @@ This section includes code for ACM experiments.
 - Every dataset has its specific file for running the code.
 - Make sure the filepath is pointed to the correct directory.
 -For Running Experiments for instance for breast cancer. python3 breast_cancer_ACM.py.
+
+## 📄 Citation
+
+If you find this work useful, please cite:
+
+```bibtex
+@article{10.1145/3654929,
+author = {Zhen, Cheng and Aryal, Nischal and Termehchy, Arash and Chabada, Amandeep Singh},
+title = {Certain and Approximately Certain Models for Statistical Learning},
+year = {2024},
+issue_date = {June 2024},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {2},
+number = {3},
+url = {https://doi.org/10.1145/3654929},
+doi = {10.1145/3654929},
+abstract = {Real-world data is often incomplete and contains missing values. To train accurate models over real-world datasets, users need to spend a substantial amount of time and resources imputing and finding proper values for missing data items. In this paper, we demonstrate that it is possible to learn accurate models directly from data with missing values for certain training data and target models. We propose a unified approach for checking the necessity of data imputation to learn accurate models across various widely-used machine learning paradigms. We build efficient algorithms with theoretical guarantees to check this necessity and return accurate models in cases where imputation is unnecessary. Our extensive experiments indicate that our proposed algorithms significantly reduce the amount of time and effort needed for data imputation without imposing considerable computational overhead.},
+journal = {Proc. ACM Manag. Data},
+month = may,
+articleno = {126},
+numpages = {25},
+keywords = {data preparation, data quality, uncertainty quantification}
+}
